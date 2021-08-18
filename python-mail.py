@@ -1,20 +1,27 @@
+
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
+msg = MIMEMultipart('alternative')
+
 def credentials():
-    with open('credentials.txt', 'r') as f:
-        data=f.readlines()
-        username=data[0]
-        password=data[1]
+    try:
+        with open('credentials.txt', 'r') as f:
+           data=f.readlines()
+           username=data[0]
+           password=data[1]
+    except FileNotFoundError as err:
+        print(err)
     return username,password
 
 
 def sendMail(sender, sender_password,from_name, recive, msg_str):
-    host = 'smtp.gmail.com'
-    port = 587
-    server=smtplib.SMTP(host,port)
+    HOST = 'smtp.gmail.com'
+    PORT = 587
+    server=smtplib.SMTP(HOST,PORT)
     server.ehlo()
     server.starttls()
     server.login(sender,sender_password)
@@ -23,7 +30,10 @@ def sendMail(sender, sender_password,from_name, recive, msg_str):
     print("\nMail sent successfully!!")
 
 def mailBody():
-    f = open('text.txt', 'w')
+    try:
+        f = open('text.txt', 'w')
+    except FileNotFoundError as err:
+            print(err)
     print("\n")
     print("Enter the text, when you are done type END")
     while True:
@@ -33,13 +43,14 @@ def mailBody():
         if text=="END":  
             f.close()
             break
-    with open('text.txt','r') as f:
-        data=f.readlines()[:-1]
-        data_string=''.join(data)
+    try:
+        with open('text.txt','r') as f:
+            data=f.readlines()[:-1]
+            data_string=''.join(data)
+    except FileNotFoundError as err:
+        print(err)
     return data_string 
 
-
-msg = MIMEMultipart('alternative')
 
 def mailStructure (): 
 
@@ -58,55 +69,56 @@ def mailStructure ():
     msg_str=msg.as_string()
     return msg_str
 
-
-sender, sender_password=credentials()
-
-msg = MIMEMultipart('alternative')
-
-from_name=input("The FROM NAME: ")
-email_subject=input("Email subject: ")
-
-msg['From'] = from_name
-msg['Subject'] = email_subject
+def main():
+    sender, sender_password=credentials()
 
 
-print("1. Send mail to one adress")
-print("2. Send mail to multiple adresses")
+    from_name=input("The FROM NAME: ")
+    email_subject=input("Email subject: ")
 
-choice=int(input())
+    msg['From'] = from_name
+    msg['Subject'] = email_subject
 
-if choice == 1:
 
-    recive=input("Send email to: ")
+    print("1. Send mail to one adress")
+    print("2. Send mail to multiple adresses")
+
+    choice=int(input())
+
+    if choice == 1:
+
+        recive=input("Send email to: ")
+        
+        msg['To'] = recive
+
+        msg_str = mailStructure()
+        
+        sendMail(sender,sender_password,from_name,recive,msg_str)
     
-    msg['To'] = recive
 
-    msg_str = mailStructure()
-    
-    sendMail(sender,sender_password,from_name,recive,msg_str)
-   
+    if choice == 2:
+        host = 'smtp.gmail.com'
+        port = 587
+        server=smtplib.SMTP(host,port)
+        server.ehlo()
+        server.starttls()
+        server.login(sender,sender_password)
 
-if choice == 2:
-    host = 'smtp.gmail.com'
-    port = 587
-    server=smtplib.SMTP(host,port)
-    server.ehlo()
-    server.starttls()
-    server.login(sender,sender_password)
+        msg_str = mailStructure()
 
-    msg_str = mailStructure()
+        mails = []
 
-    mails = []
+        while True:
 
-    while True:
+            receivers=input("Send email to: ")
+            mails.append(receivers)
 
-     receivers=input("Send email to: ")
-     mails.append(receivers)
+            if receivers == 'END':
+                break
+        for mail in mails[:-1]:
+            msg['To'] =", ".join(mail)
+            server.sendmail(from_name,mail,msg_str)
+            server.quit()
 
-     if receivers == 'END':
-        break
-    for mail in mails[:-1]:
-     msg['To'] =", ".join(mail)
-     server.sendmail(from_name,mail,msg_str)
-    server.quit()
-
+if __name__=='__main__':
+    main()
